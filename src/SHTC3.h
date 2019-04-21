@@ -7,6 +7,7 @@
 // Uncomment this for no float operation
 //#define ARDUINO_SHTC3_NOFLOAT   1
 
+#define SHTC3_RESET_DELAY_US      ( 255 )
 
 typedef TwoWire arduino_shtc3_wire_t;
 
@@ -34,8 +35,8 @@ class SHTC3 {
         #endif
 
         inline bool  sleep()  { return  twiCommand(SHTC3_SLEEP);  }
-        inline bool  wakeup() { return  twiCommand(SHTC3_WAKEUP); }
-        inline bool  reset()  { return  twiCommand(SHTC3_RESET);  }
+        inline bool  wakeup() { return  twiCommand(SHTC3_WAKEUP); delayMicroseconds(SHTC3_RESET_DELAY_US); }
+        inline bool  reset()  { return  twiCommand(SHTC3_RESET); delayMicroseconds(SHTC3_RESET_DELAY_US);  }
 
         bool twiCommand(uint16_t cmd,uint8_t stop=true);
         bool twiTransfer(uint16_t cmd,uint8_t *data,uint8_t len,uint8_t pause=0);

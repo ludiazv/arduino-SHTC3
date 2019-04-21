@@ -3,13 +3,17 @@
 
 // Constants
 #define I2C_ADDR            ( (uint8_t) 0x70 )
-#define RESET_DELAY_US      245
+
 // Scalation constants Humidity K h = 100 * val / 2^16
 // //(100.0f/65536.0f) * Val
-#define H_K                 (0.001525878906f)  
+#define H_K                 (0.001525878906f)
+// Scaled ratio for int computation
+#define H_K_SCALED          (15259UL)      
 // t = -45 + 175 * (val / 2^16 )
-// 175.0f / /65536.0f) * val - 45.0f
+// (175.0f / 65536.0f) * val - 45.0f
 #define T_K                 (0.002670288086f)
+// SCALED RATIO for int computation 175*10000000 / 2^16
+#define T_K_SCALED          (26703UL)
 #define T_MIN               (45.0f)
 #define T_MIN_INT           (-4500)
 #define T_MAX_INT           (17500)
@@ -38,20 +42,24 @@ uint8_t SHTC3::crc8(const uint8_t *data, uint8_t len) {
 
 bool SHTC3::twiCommand(uint16_t cmd,uint8_t stop) {
     uint8_t tx=0;
+    //Serial.print("WIRE CMD:"); Serial.print(cmd,HEX);
     _wire.beginTransmission(I2C_ADDR);
-    tx+= _wire.write(cmd >> 8 );             // MSB first
-    tx+= _wire.write(cmd & 0xFF);
-    return _wire.endTransmission(stop) ==0 && (tx==2) ;
+    tx+= _wire.write((uint8_t)(cmd >> 8 ));             // MSB first
+    tx+= _wire.write((uint8_t)(cmd & 0xFF));
+    uint8_t r=_wire.endTransmission(stop);
+    //Serial.print("/res:"); Serial.println(r==0 && tx==2);
+    return  r==0 && (tx==2) ;
 }
 
 bool SHTC3::twiTransfer(uint16_t cmd,uint8_t *data,uint8_t len,uint8_t pause) {
     bool r=false;
-    if(twiCommand(SHTC3_ID,false)) {
+    if(twiCommand(cmd,false)) {
         if(pause>0) delay(pause);
         _wire.requestFrom(I2C_ADDR, len, (uint8_t)true);
         r= ( _wire.available() == len );
         if(r) {
-            while(len--) *data++=_wire.read();
+            while(len--) //{*data=_wire.read(); Serial.print(*data,HEX); data++; }
+                *data++=_wire.read();
         }
     }
     return r;
@@ -62,13 +70,13 @@ bool SHTC3::begin(bool do_sample) {
     
     uint8_t id[3]; // ID + CRC
     bool r=false;
-    delayMicroseconds(RESET_DELAY_US);
+    delayMicroseconds(SHTC3_RESET_DELAY_US);
+    wakeup();
     if(twiTransfer(SHTC3_ID,id,3) && checkCRC(id)) {
-        // xxxx' 1 xxx’  |  xx 00’0111  is chip signature  Check it
-        r= (id[0] & 0b00001000) && ( (id[1] & 0b00111111) == 0b000001111 );
+        // xxxx ' 1xxx  |  xx00 ’ 0111  is chip signature  Check it
+        r= (id[0] & 0b00001000) && ( (id[1] & 0b00111111) == 0b000000111 );
         // Soft reset of the device && put in sleep mode
         r = r && reset();
-        delayMicroseconds(RESET_DELAY_US);
         r =  r  && ( (do_sample) ? sample() : sleep() );
     }
     return r;
@@ -91,15 +99,13 @@ bool SHTC3::sample(uint16_t readcmd,uint8_t pause) {
 #if defined(ARDUINO_SHTC3_NOFLOAT)
 
 int16_t SHTC3::readTempC() {
-    uint16_t t= 26 *_t;
-    t+= (_t/1000)*(int16_t)7;
-    return  t - (int16_t)4500;
+    uint32_t t= T_K_SCALED * _t;
+    return   ( (uint16_t)(t/100000) ) - (int16_t)4500;
 }
 
 uint16_t SHTC3::readHumidity() {
-    uint16_t h= 15 * _h;
-    h+= (_t/1000) * 2;
-    return h;
+    uint32_t h= H_K_SCALED * _h;
+    return   (h/100000);
 }
 
 #else
