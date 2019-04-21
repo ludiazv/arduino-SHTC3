@@ -3,7 +3,7 @@
 A bare minimal lib for this sensor for low power applications based on official [SHT libraries](https://github.com/Sensirion/arduino-sht).
 
 ## Usage
- The library is designed for low power applications that will read sensor periodically. When the sensor is not readed
+ The library is designed for low power applications that will read sensor periodically. When the sensor is not reading
  it is keep spleep consuming less than uA.
 
 
