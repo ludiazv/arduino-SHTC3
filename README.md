@@ -50,3 +50,4 @@ Library has been tested on a arduino pro mini 3.3V.
 
 - 0.0.1  First version
 - 0.0.2  Bug correction
+- 0.0.3  Fix wake & reset delay bug.

@@ -35,8 +35,8 @@ class SHTC3 {
         #endif
 
         inline bool  sleep()  { return  twiCommand(SHTC3_SLEEP);  }
-        inline bool  wakeup() { return  twiCommand(SHTC3_WAKEUP); delayMicroseconds(SHTC3_RESET_DELAY_US); }
-        inline bool  reset()  { return  twiCommand(SHTC3_RESET); delayMicroseconds(SHTC3_RESET_DELAY_US);  }
+        inline bool  wakeup() { bool b=twiCommand(SHTC3_WAKEUP); delayMicroseconds(SHTC3_RESET_DELAY_US); return b; }
+        inline bool  reset()  { bool b=twiCommand(SHTC3_RESET); delayMicroseconds(SHTC3_RESET_DELAY_US);  return b; }
 
         bool twiCommand(uint16_t cmd,uint8_t stop=true);
         bool twiTransfer(uint16_t cmd,uint8_t *data,uint8_t len,uint8_t pause=0);
